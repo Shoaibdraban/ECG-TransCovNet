@@ -45,5 +45,12 @@ import tensorflow as tf
 model = tf.keras.models.load_model('ecg_transcovnet.keras')
 
 # Load INT8 quantized model
+
+Performance
+Class	Type	F1-Score
+N	Normal	0.957
+S	Supraventricular	0.152
+V	Ventricular	0.853
+Q	Paced/Unknown	0.623
 interpreter = tf.lite.Interpreter(model_path='ecg_transcovnet_int8.tflite')
 interpreter.allocate_tensors()
