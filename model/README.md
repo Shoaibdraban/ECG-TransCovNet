@@ -110,9 +110,16 @@ preds = interpreter.get_tensor(outputs[0]["index"])  # (1, 4)
 
 ## Citation
 
-If you use these files in your research, please cite:
+If you use these model files in your research, please cite:
 
-> Draban, S. (2025). *ECG-TransCovNet: A Hybrid CNN-Transformer for Multi-Class Arrhythmia Detection in ECG Signals*. MSCS Thesis.
+```bibtex
+@mastersthesis{shoaib2026ecg,
+  title  = {ECG-TransCovNet: A Hybrid CNN-Transformer Architecture for Multi-Class Arrhythmia Detection in ECG Signals},
+  author = {Shoaib, Muhammad},
+  year   = {2026},
+  school = {Gomal University, Dera Ismail Khan}
+}
+```
 
 ## License
 
