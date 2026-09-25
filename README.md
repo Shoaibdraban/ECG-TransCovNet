@@ -1,6 +1,6 @@
 # ECG-TransCovNet — Model Files
 
-[![Thesis](https://img.shields.io/badge/Thesis-PDF-blue)](https://github.com/Shoaibdraban/ECG-TransCovNet/blob/main/thesis/ECG-TransCovNet_Thesis.pdf)
+[![Thesis](https://github.com/Shoaibdraban/ECG-TransCovNet/blob/main/ECG-TransCovNet_Thesis.pdf)
 [![Python](https://img.shields.io/badge/Python-3.10-green)](https://python.org)
 [![TensorFlow](https://img.shields.io/badge/TensorFlow-2.15-orange)](https://tensorflow.org)
 [![Keras](https://img.shields.io/badge/Keras-3.15-red)](https://keras.io)
