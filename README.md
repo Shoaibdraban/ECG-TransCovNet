@@ -1,155 +1,167 @@
-# ECG-TransCovNet
+# ECG-TransCovNet — Model Files
 
-A Hybrid CNN-Transformer Architecture for Multi-Class Arrhythmia Detection in ECG Signals
+This folder contains the trained ECG-TransCovNet model and its deployment files.
 
-[![Thesis](https://img.shields.io/badge/Thesis-PDF-blue)](thesis/ECG-TransCovNet_Thesis.pdf)
-[![Python](https://img.shields.io/badge/Python-3.10-green)](https://python.org)
-[![TensorFlow](https://img.shields.io/badge/TensorFlow-2.15-orange)](https://tensorflow.org)
-[![License: MIT](https://img.shields.io/badge/License-MIT-yellow.svg)](https://opensource.org/licenses/MIT)
+## Files
 
----
+| File | Size | Description |
+|------|------|-------------|
+| `ecg_rebuilt.keras` | ~1.4 MB | Full Keras model (architecture + trained weights) |
+| `baseline_a_final_locked.keras` | ~633 KB | Baseline CNN for comparison |
+| `ecg_transcovnet_fp32.tflite` | ~430 KB | TFLite float32 — bit-exact with Keras (max diff < 1e-7) |
+| `ecg_transcovnet_dynamic.tflite` | **~170 KB** | TFLite dynamic-range INT8 — for edge / mobile deployment |
 
-## Overview
+## Verified
 
-ECG-TransCovNet is a lightweight hybrid CNN-Transformer architecture for multi-class arrhythmia detection in ECG signals. The model is designed for resource-constrained healthcare settings like rural Pakistan, where cardiologists are scarce and computing resources are limited.
+- **Keras ↔ float32 TFLite:** max output difference `1.19e-07` (float32 precision noise)
+- **Keras ↔ dynamic INT8 TFLite:** max probability shift `~0.01`; argmax (predicted class) identical
+- **Input shapes:** `waveform (259, 1)` + `rr_features (4,)`
+- **Output shape:** `(4,)` softmax over classes `[N, S, V, Q]` (AAMI)
+- **Dataset:** MIT-BIH Arrhythmia Database (48 records, 109,494 beats, subject-disjoint split)
 
-The research follows a two-phase methodology:
+## Usage — Keras
 
-1. Synthetic data for architectural validation
-2. Real MIT-BIH data for clinical validation with strict subject-disjoint splits
+```python
+import numpy as np
+import keras
+from keras import layers, ops
 
----
+@keras.saving.register_keras_serializable(package="ECGTransCovNet")
+class AddPosEncoding(layers.Layer):
+    def __init__(self, pos_enc_value, **kwargs):
+        super().__init__(**kwargs)
+        self.pos_enc_value = pos_enc_value
+    def call(self, t):
+        return t + ops.convert_to_tensor(self.pos_enc_value)
+    def get_config(self):
+        cfg = super().get_config()
+        cfg["pos_enc_value"] = self.pos_enc_value.tolist()
+        return cfg
 
-## Key Results
+model = keras.models.load_model(
+    "ecg_rebuilt.keras",
+    custom_objects={"AddPosEncoding": AddPosEncoding},
+    safe_mode=False,
+)
+
+waveform    = np.random.randn(1, 259, 1).astype(np.float32)
+rr_features = np.random.randn(1, 4).astype(np.float32)
+
+preds = model.predict([waveform, rr_features], verbose=0)
+# preds.shape == (1, 4), sum ~= 1.0
+```
+
+## Usage — TFLite float32 (bit-exact)
+
+```python
+import numpy as np
+import tensorflow as tf
+
+interpreter = tf.lite.Interpreter("ecg_transcovnet_fp32.tflite")
+interpreter.allocate_tensors()
+
+inputs  = interpreter.get_input_details()
+outputs = interpreter.get_output_details()
+
+for d in inputs:
+    if d["shape"][1] == 259:
+        waveform_idx = d["index"]
+    elif d["shape"][1] == 4:
+        rr_idx = d["index"]
+
+waveform = np.random.randn(1, 259, 1).astype(np.float32)
+rr       = np.random.randn(1, 4).astype(np.float32)
+
+interpreter.set_tensor(waveform_idx, waveform)
+interpreter.set_tensor(rr_idx, rr)
+interpreter.invoke()
+
+preds = interpreter.get_tensor(outputs[0]["index"])  # (1, 4)
+```
+
+## Usage — TFLite dynamic INT8 (170 KB, edge deployment)
+
+Use this when you need the smallest possible model for Raspberry Pi,
+mobile devices, or microcontrollers.
+
+```python
+import numpy as np
+import tensorflow as tf
+
+interpreter = tf.lite.Interpreter("ecg_transcovnet_dynamic.tflite")
+interpreter.allocate_tensors()
+
+inputs  = interpreter.get_input_details()
+outputs = interpreter.get_output_details()
+
+for d in inputs:
+    if d["shape"][1] == 259:
+        waveform_idx = d["index"]
+    elif d["shape"][1] == 4:
+        rr_idx = d["index"]
+
+waveform = np.random.randn(1, 259, 1).astype(np.float32)
+rr       = np.random.randn(1, 4).astype(np.float32)
+
+interpreter.set_tensor(waveform_idx, waveform)
+interpreter.set_tensor(rr_idx, rr)
+interpreter.invoke()
+
+preds = interpreter.get_tensor(outputs[0]["index"])  # (1, 4)
+```
+
+**Trade-off vs float32 TFLite:**
+- ✅ ~60% smaller (170 KB vs 430 KB)
+- ✅ Argmax (predicted class) identical to Keras
+- ⚠️ Max probability shift ~0.01 (int8 weight rounding)
+
+For applications where bit-exact probabilities matter, use
+`ecg_transcovnet_fp32.tflite` instead.
+
+## Performance
 
 | Metric | Value |
 |--------|-------|
-| Accuracy (Real MIT-BIH) | 91.39% |
-| Macro-F1 | 0.646 |
-| Weighted-F1 | 0.910 |
+| Accuracy (locked test set) | **91.39%** |
+| Macro F1 | 0.646 |
+| Weighted F1 | 0.910 |
 | Parameters | ~408,000 |
-| Model Size (Keras) | 1.38 MB |
-| Model Size (INT8) | 0.38 MB |
-| CPU Inference | 5.8 ms |
-| INT8 Inference | 4.21 ms |
+| Keras size | 1.38 MB |
+| TFLite float32 size | 430 KB |
+| TFLite INT8 size | **170 KB** |
+| CPU inference | ~5.8 ms/beat |
+| Raspberry Pi 4 | 18.7 ms/beat |
 
----
+### Per-Class F1
 
-## Repository Structure
+| Class | F1 |
+|-------|----|
+| N (Normal) | 0.957 |
+| S (Supraventricular) | 0.152 |
+| V (Ventricular) | 0.853 |
+| Q (Paced / Unknown) | 0.623 |
 
-ECG-TransCovNet/
-├── thesis/              # Thesis PDF
-├── model/               # Trained model files
-├── code/                # Source code
-├── results/             # Result plots
-├── notebooks/           # Jupyter notebooks
-├── LICENSE
-└── README.md
+## Architecture
 
----
-
-## Model Architecture
-
-- CNN Branch: 3 conv layers (64→128→256 filters, kernels 7→5→3)
-- Transformer Branch: 2 encoder layers, 4 attention heads, 128-dim
-- Attention Fusion: Dynamic weighting (α_cnn + α_trans = 1)
-- RR Branch: 4 RR-interval features → Dense(32) → Dense(16)
-- Classification Head: 4 classes (N, S, V, Q)
-
----
-
-## Per-Class Performance (Real MIT-BIH)
-
-| Class | Type | Precision | Recall | F1-Score | AUROC |
-|-------|------|-----------|--------|----------|-------|
-| N | Normal | 0.969 | 0.945 | 0.957 | 0.958 |
-| S | Supraventricular | 0.355 | 0.097 | 0.152 | 0.861 |
-| V | Ventricular | 0.781 | 0.939 | 0.853 | 0.986 |
-| Q | Paced/Unknown | 0.471 | 0.921 | 0.623 | 0.990 |
-
----
-
-## Dataset
-
-MIT-BIH Arrhythmia Database
-
-- 48 records, 47 subjects
-- 109,494 beats
-- 360 Hz sampling rate
-- MLII single-lead
-- 4-class AAMI (N, S, V, Q)
-
----
-
-## Technologies
-
-- Python 3.10
-- TensorFlow 2.15 / Keras
-- Scikit-learn
-- NumPy / SciPy
-- Matplotlib
-- Google Colab
-
----
-
-## Quick Start
-
-### Clone Repository
-
-git clone https://github.com/Shoaibdraban/ECG-TransCovNet.git
-cd ECG-TransCovNet
-
-### Install Dependencies
-
-pip install -r code/requirements.txt
-
-### Load Model
-
-import tensorflow as tf
-
-model = tf.keras.models.load_model('model/ecg_transcovnet.keras')
-
-interpreter = tf.lite.Interpreter(model_path='model/ecg_transcovnet_int8.tflite')
-interpreter.allocate_tensors()
-
----
-
-## Thesis
-
-Title: ECG-TransCovNet: A Hybrid CNN-Transformer Architecture for Multi-Class Arrhythmia Detection in ECG Signals
-
-Author: Muhammad Shoaib
-Supervisor: Dr. Khalid Mehmood
-University: Gomal University, Dera Ismail Khan
-Year: 2024–2026
-
-Download Thesis PDF: [thesis/ECG-TransCovNet_Thesis.pdf](thesis/ECG-TransCovNet_Thesis.pdf)
-
----
+- **CNN Branch:** 3 × Conv1D (64 → 128 → 256 filters, kernels 7 → 5 → 3) + BatchNorm + MaxPool + Dropout
+- **Transformer Branch:** 2 encoder blocks, 4 attention heads, 128-dim feed-forward
+- **Attention Fusion:** dynamic weighting (α_cnn + α_trans = 1)
+- **RR Branch:** 4 RR-interval features → Dense(32) → Dense(16)
+- **Classification Head:** Dense(4) softmax
 
 ## Citation
 
-If you use this work in your research, please cite:
+If you use these model files in your research, please cite:
 
+```bibtex
 @mastersthesis{shoaib2026ecg,
-  title={ECG-TransCovNet: A Hybrid CNN-Transformer Architecture for Multi-Class Arrhythmia Detection in ECG Signals},
-  author={Shoaib, Muhammad},
-  year={2026},
-  school={Gomal University, Dera Ismail Khan}
+  title  = {ECG-TransCovNet: A Hybrid CNN-Transformer Architecture for Multi-Class Arrhythmia Detection in ECG Signals},
+  author = {Shoaib, Muhammad},
+  year   = {2026},
+  school = {Gomal University, Dera Ismail Khan}
 }
-
----
-
-## Contact
-
-Muhammad Shoaib
-Email: shoaibdraban@gmail.com
-WhatsApp: +92 346 7851061
-GitHub: https://github.com/Shoaibdraban
-Portfolio: https://shoaibdraban-portfolio.netlify.app
-
----
+```
 
 ## License
 
-This project is licensed under the MIT License — see the [LICENSE](LICENSE) file for details.
+MIT — see [LICENSE](../LICENSE) at repository root.
