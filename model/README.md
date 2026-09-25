@@ -1,5 +1,14 @@
 # ECG-TransCovNet — Model Files
 
+[![Thesis](https://img.shields.io/badge/Thesis-PDF-blue)](https://github.com/Shoaibdraban/ECG-TransCovNet/blob/main/ECG-TransCovNet_Thesis.pdf)
+[![Python](https://img.shields.io/badge/Python-3.10-green)](https://python.org)
+[![TensorFlow](https://img.shields.io/badge/TensorFlow-2.15-orange)](https://tensorflow.org)
+[![Keras](https://img.shields.io/badge/Keras-3.15-red)](https://keras.io)
+[![TFLite](https://img.shields.io/badge/TFLite-170%20KB%20INT8-brightgreen)](https://ai.google.dev/edge/lite)
+[![License: MIT](https://img.shields.io/badge/License-MIT-yellow.svg)](https://opensource.org/licenses/MIT)
+
+---
+
 This folder contains the trained ECG-TransCovNet model and its deployment files.
 
 ## Files
