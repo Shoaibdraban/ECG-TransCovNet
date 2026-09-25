@@ -1,11 +1,3 @@
-
----
-
-## 📁 Folder 2: `model/README.md`
-
-**Content (copy-paste):**
-
-```markdown
 # Model Files
 
 This folder contains the trained ECG-TransCovNet model files.
@@ -44,13 +36,15 @@ import tensorflow as tf
 # Load full model
 model = tf.keras.models.load_model('ecg_transcovnet.keras')
 
-# Load INT8 quantized model
+## Performance
 
-Performance
-Class	Type	F1-Score
-N	Normal	0.957
-S	Supraventricular	0.152
-V	Ventricular	0.853
-Q	Paced/Unknown	0.623
+| Class | Type | F1-Score |
+|-------|------|----------|
+| N | Normal | 0.957 |
+| S | Supraventricular | 0.152 |
+| V | Ventricular | 0.853 |
+| Q | Paced/Unknown | 0.623 |
+
+# Load INT8 quantized model
 interpreter = tf.lite.Interpreter(model_path='ecg_transcovnet_int8.tflite')
 interpreter.allocate_tensors()
