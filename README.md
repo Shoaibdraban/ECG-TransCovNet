@@ -3,6 +3,7 @@
 A Hybrid CNN-Transformer Architecture for Multi-Class Arrhythmia Detection in ECG Signals
 
 [![Thesis](https://img.shields.io/badge/Thesis-PDF-blue)](https://github.com/Shoaibdraban/ECG-TransCovNet/blob/main/ECG-TransCovNet_Thesis.pdf)
+[![DOI](https://zenodo.org/badge/DOI/10.5281/zenodo.22988217.svg)](https://doi.org/10.5281/zenodo.22988217)
 [![Python](https://img.shields.io/badge/Python-3.10-green)](https://python.org)
 [![TensorFlow](https://img.shields.io/badge/TensorFlow-2.15-orange)](https://tensorflow.org)
 [![Keras](https://img.shields.io/badge/Keras-3.15-red)](https://keras.io)
@@ -182,7 +183,8 @@ preds = interpreter.get_tensor(outputs[0]["index"])  # shape (1, 4)
 **University:** Gomal University, Dera Ismail Khan  
 **Year:** 2024–2026
 
-📄 **[Download Thesis PDF](https://github.com/Shoaibdraban/ECG-TransCovNet/blob/main/ECG-TransCovNet_Thesis.pdf)**
+📄 **[Download Thesis PDF](https://github.com/Shoaibdraban/ECG-TransCovNet/blob/main/ECG-TransCovNet_Thesis.pdf)**  
+🔗 **DOI:** [10.5281/zenodo.22988217](https://doi.org/10.5281/zenodo.22988217)
 
 ---
 
@@ -195,7 +197,9 @@ If you use this work in your research, please cite:
   title  = {ECG-TransCovNet: A Hybrid CNN-Transformer Architecture for Multi-Class Arrhythmia Detection in ECG Signals},
   author = {Shoaib, Muhammad},
   year   = {2026},
-  school = {Gomal University, Dera Ismail Khan}
+  school = {Gomal University, Dera Ismail Khan},
+  doi    = {10.5281/zenodo.22988217},
+  url    = {https://doi.org/10.5281/zenodo.22988217}
 }
 ```
 
@@ -214,3 +218,6 @@ If you use this work in your research, please cite:
 ## License
 
 This project is licensed under the MIT License — see the [LICENSE](LICENSE) file for details.
+
+
+---
